@@ -1,35 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Holoscape.ai - Browse</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div id="container"></div>
-    <div id="info">
-        <h1>Holoscape.ai</h1>
-        <p>Browse Panoramas</p>
-    </div>
+import { initViewer, loadPanoramas, loadPanorama, updatePanoramaConfig } from './viewer_common.js';
 
-    <div id="controls">
-        <label for="panoramaSelector">Select Panorama:</label>
-        <select id="panoramaSelector"></select>
+document.addEventListener('DOMContentLoaded', async () => {
+    await initViewer(); 
+    const panoList = await loadPanoramas();
 
-        <label for="sphereSize">Sphere Size: <span id="sphereSizeValue">6</span></label>
-        <input type="range" id="sphereSize" min="3" max="30" step="0.1" value="6">
+    const selector = document.getElementById('panoramaSelector');
+    panoList.forEach((pano) => {
+        const option = document.createElement('option');
+        option.value = pano;
+        option.text = pano;
+        selector.add(option);
+    });
 
-        <label for="depthScale">Depth Scale: <span id="depthScaleValue">4.0</span></label>
-        <input type="range" id="depthScale" min="0" max="10" step="0.1" value="4.0">
+    selector.addEventListener('change', () => {
+        loadPanorama(selector.value);
+    });
 
-        <label for="meshResolution">Mesh Resolution: <span id="meshResolutionValue">256</span></label>
-        <input type="range" id="meshResolution" min="256" max="8192" step="256" value="256">
+    if (panoList.length > 0) {
+        loadPanorama(panoList[0]);
+    }
 
-        <button id="applySettings">Apply Settings</button>
-    </div>
+    document.getElementById('applySettings').addEventListener('click', async () => {
+        const sphereSize = parseFloat(document.getElementById('sphereSize').value);
+        const depthScale = parseFloat(document.getElementById('depthScale').value);
+        const meshResolution = parseInt(document.getElementById('meshResolution').value);
 
-    <script type="module" src="viewer_common.js"></script>
-    <script type="module" src="browse.js"></script>
-</body>
-</html>
+        const currentPanorama = selector.value;
+        if (currentPanorama) {
+            await updatePanoramaConfig(currentPanorama, { sphereSize, depthScale, meshResolution });
+            loadPanorama(currentPanorama);
+        }
+    });
+});
