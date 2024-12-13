@@ -93,7 +93,7 @@ export async function loadPanorama(panorama) {
     const loader = new THREE.TextureLoader(manager);
 
     loader.load(`/panoramas/${panorama}/image.png`, (texture) => {
-        texture.encoding = THREE.sRGBEncoding;
+        texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.NearestFilter;
         texture.generateMipmaps = false;
         sphere.material.map = texture;
