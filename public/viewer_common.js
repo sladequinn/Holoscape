@@ -12,7 +12,7 @@ export async function initViewer() {
     const light = new THREE.AmbientLight(0xffffff, 3);
     scene.add(light);
 
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 1, 2000);
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000);
     scene.add(camera);
 
     renderer = new THREE.WebGLRenderer();
@@ -20,7 +20,6 @@ export async function initViewer() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setAnimationLoop(animate);
     renderer.xr.enabled = true;
-    renderer.xr.setReferenceSpaceType('local');
     container.appendChild(renderer.domElement);
 
     document.body.appendChild(VRButton.createButton(renderer));
@@ -49,16 +48,14 @@ export async function loadPanoramas() {
 }
 
 export async function updatePanoramaConfig(panorama, settings) {
-    // Update config via serverless function
     await fetch(`/api/update_config`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ panorama, ...settings })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ panorama, ...settings }),
     });
 }
 
 export async function loadPanorama(panorama) {
-    // Fetch config directly from static files for now
     const configRes = await fetch(`/panoramas/${panorama}/config.json`);
     const config = await configRes.json();
 
@@ -82,12 +79,10 @@ export async function loadPanorama(panorama) {
         config.meshResolution
     );
 
-    const panoSphereMat = new THREE.MeshStandardMaterial({
+    const panoSphereMat = new THREE.MeshBasicMaterial({
         side: THREE.BackSide,
-        displacementScale: config.depthScale,
     });
 
-    });
     sphere = new THREE.Mesh(panoSphereGeo, panoSphereMat);
     scene.add(sphere);
 
