@@ -82,8 +82,11 @@ export async function loadPanorama(panorama) {
         config.meshResolution
     );
 
-   const panoSphereMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
-        displacementScale: config.depthScale
+    const panoSphereMat = new THREE.MeshStandardMaterial({
+        side: THREE.BackSide,
+        displacementScale: config.depthScale,
+    });
+
     });
     sphere = new THREE.Mesh(panoSphereGeo, panoSphereMat);
     scene.add(sphere);
