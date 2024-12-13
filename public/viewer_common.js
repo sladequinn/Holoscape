@@ -20,6 +20,7 @@ export async function initViewer() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setAnimationLoop(animate);
     renderer.xr.enabled = true;
+    renderer.xr.setReferenceSpaceType('local');
     container.appendChild(renderer.domElement);
 
     document.body.appendChild(VRButton.createButton(renderer));
@@ -48,6 +49,7 @@ export async function loadPanoramas() {
 }
 
 export async function updatePanoramaConfig(panorama, settings) {
+    // Update config via serverless function
     await fetch(`/api/update_config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -56,6 +58,7 @@ export async function updatePanoramaConfig(panorama, settings) {
 }
 
 export async function loadPanorama(panorama) {
+    // Fetch config directly from static files for now
     const configRes = await fetch(`/panoramas/${panorama}/config.json`);
     const config = await configRes.json();
 
@@ -79,8 +82,9 @@ export async function loadPanorama(panorama) {
         config.meshResolution
     );
 
-    const panoSphereMat = new THREE.MeshBasicMaterial({
+    const panoSphereMat = new THREE.MeshStandardMaterial({
         side: THREE.BackSide,
+        displacementScale: config.depthScale,
     });
 
     sphere = new THREE.Mesh(panoSphereGeo, panoSphereMat);
