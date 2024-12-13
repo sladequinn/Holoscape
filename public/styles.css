@@ -6,36 +6,31 @@ body {
     color: #fff;
 }
 
-.hero {
+#info {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+}
+
+#controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background: #000;
+}
+
+#controls label, #controls input, #controls select, #controls button {
+    margin-bottom: 5px;
     color: #fff;
 }
 
-.hero h1 {
-    font-size: 48px;
-    margin-bottom: 10px;
-}
-
-.hero p {
-    font-size: 20px;
-    margin-bottom: 20px;
-}
-
-.hero button {
-    padding: 10px 20px;
-    margin: 5px;
-    background: #1e90ff;
-    border: none;
-    border-radius: 5px;
-    color: #fff;
-    cursor: pointer;
-}
-
-.hero button:hover {
-    background: #63b8ff;
+#controls input[type="range"] {
+    width: 200px;
 }
