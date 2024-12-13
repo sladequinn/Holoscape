@@ -44,47 +44,55 @@ function animate() {
 }
 
 export async function loadPanoramas() {
-    const res = await fetch('/api/panorama_list');
-    return await res.json();
+    // Fetch the list of panoramas from your serverless endpoint or static list
+    // Adjust this to your actual API endpoint or method of getting panorama names.
+    const response = await fetch('/api/panorama_list');
+    return await response.json();
 }
 
 export async function updatePanoramaConfig(panorama, settings) {
-    // Update config via serverless function
+    // Call your serverless function to update config
+    // Adjust as needed if you store configs elsewhere
     await fetch(`/api/update_config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ panorama, ...settings }),
+        body: JSON.stringify({ panorama, ...settings })
     });
 }
 
 export async function loadPanorama(panorama) {
-    // Fetch config directly from static files for now
-    const configRes = await fetch(`/panoramas/${panorama}/config.json`);
-    const config = await configRes.json();
+    // Fetch config.json
+    const configResponse = await fetch(`/panoramas/${panorama}/config.json`);
+    if (!configResponse.ok) {
+        console.error('No config found for', panorama);
+        return;
+    }
+    const config = await configResponse.json();
 
-    document.getElementById('sphereSizeValue').innerText = config.sphereSize;
-    document.getElementById('depthScaleValue').innerText = config.depthScale;
-    document.getElementById('meshResolutionValue').innerText = config.meshResolution;
+    // Update UI elements if present
+    const sphereSizeEl = document.getElementById('sphereSizeValue');
+    const depthScaleEl = document.getElementById('depthScaleValue');
+    const meshResEl = document.getElementById('meshResolutionValue');
 
-    document.getElementById('sphereSize').value = config.sphereSize;
-    document.getElementById('depthScale').value = config.depthScale;
-    document.getElementById('meshResolution').value = config.meshResolution;
+    if (sphereSizeEl) sphereSizeEl.innerText = config.sphereSize;
+    if (depthScaleEl) depthScaleEl.innerText = config.depthScale;
+    if (meshResEl) meshResEl.innerText = config.meshResolution;
 
+    if (document.getElementById('sphereSize')) document.getElementById('sphereSize').value = config.sphereSize;
+    if (document.getElementById('depthScale')) document.getElementById('depthScale').value = config.depthScale;
+    if (document.getElementById('meshResolution')) document.getElementById('meshResolution').value = config.meshResolution;
+
+    // Remove old sphere if exists
     if (sphere) {
         scene.remove(sphere);
         sphere.geometry.dispose();
         sphere.material.dispose();
     }
 
-    const panoSphereGeo = new THREE.SphereGeometry(
-        config.sphereSize,
-        config.meshResolution,
-        config.meshResolution
-    );
-
+    const panoSphereGeo = new THREE.SphereGeometry(config.sphereSize, config.meshResolution, config.meshResolution);
     const panoSphereMat = new THREE.MeshStandardMaterial({
         side: THREE.BackSide,
-        displacementScale: config.depthScale,
+        displacementScale: config.depthScale
     });
 
     sphere = new THREE.Mesh(panoSphereGeo, panoSphereMat);
@@ -98,6 +106,8 @@ export async function loadPanorama(panorama) {
         texture.minFilter = THREE.NearestFilter;
         texture.generateMipmaps = false;
         sphere.material.map = texture;
+    }, undefined, (err) => {
+        console.error('Failed to load main image for', panorama, err);
     });
 
     loader.load(`/panoramas/${panorama}/depth.png`, (depth) => {
@@ -105,7 +115,7 @@ export async function loadPanorama(panorama) {
         depth.generateMipmaps = false;
         sphere.material.displacementMap = depth;
     }, undefined, () => {
-        console.log(`No depth map found for ${panorama}`);
+        console.log(`No depth map found for ${panorama}, proceeding without displacement.`);
     });
 
     manager.onLoad = () => {
