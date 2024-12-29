@@ -15,7 +15,7 @@ export async function initViewer() {
     scene.add(light);
 
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000);
-      camera.position.set(0,0,0.01);
+    camera.position.set(0, 0, 0.01);
     scene.add(camera);
 
     renderer = new THREE.WebGLRenderer();
@@ -23,44 +23,43 @@ export async function initViewer() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setAnimationLoop(animate);
     renderer.xr.enabled = true;
-      try {
-          renderer.xr.setReferenceSpaceType('local');
-     } catch (error) {
-            console.log('local is not supported')
-       }
-      try {
-           renderer.xr.setReferenceSpaceType('viewer');
-      } catch (error) {
-           console.log('local viewer is not supported')
-      }
-      try {
-            renderer.xr.setReferenceSpaceType('local-floor');
-      } catch (error) {
-             console.log('local floor is not supported')
-      }
+    try {
+        renderer.xr.setReferenceSpaceType('local');
+    } catch (error) {
+        console.log('local is not supported');
+    }
+    try {
+        renderer.xr.setReferenceSpaceType('viewer');
+    } catch (error) {
+        console.log('local viewer is not supported');
+    }
+    try {
+        renderer.xr.setReferenceSpaceType('local-floor');
+    } catch (error) {
+        console.log('local floor is not supported');
+    }
 
     container.appendChild(renderer.domElement);
 
-     const vrButton = VRButton.createButton(renderer);
-     document.body.appendChild(vrButton);
-       console.log("initViewer: VRButton created and added to DOM.", vrButton);
+    const vrButton = VRButton.createButton(renderer);
+    document.body.appendChild(vrButton);
+    console.log("initViewer: VRButton created and added to DOM.", vrButton);
 
     window.addEventListener('resize', onWindowResize);
 
     console.log("initViewer: Initialization complete.");
 
-      if (navigator.xr) {
-          navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-            if(supported){
-                 console.log("initViewer: WebXR immersive-vr is supported.");
+    if (navigator.xr) {
+        navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+            if (supported) {
+                console.log("initViewer: WebXR immersive-vr is supported.");
             } else {
-                 console.log("initViewer: WebXR immersive-vr is not supported.");
+                console.log("initViewer: WebXR immersive-vr is not supported.");
             }
-          });
-        } else{
-           console.log("initViewer: WebXR is not supported by this browser.");
-      }
-
+        });
+    } else {
+        console.log("initViewer: WebXR is not supported by this browser.");
+    }
 }
 
 function onWindowResize() {
@@ -68,7 +67,7 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-     console.log("onWindowResize: Camera and renderer updated.");
+    console.log("onWindowResize: Camera and renderer updated.");
 }
 
 function animate() {
@@ -79,110 +78,108 @@ function animate() {
         sphere.position.z = Math.cos(time) * 0.2;
     }
     try {
-       renderer.render(scene, camera);
-        } catch (error) {
-            console.error("An error occurred during render:", error)
-         }
+        renderer.render(scene, camera);
+    } catch (error) {
+        console.error("An error occurred during render:", error);
+    }
 }
 
 export async function loadPanoramas() {
-      //This method is no longer used, as the panorama list is dynamically loaded.
-       console.log("loadPanoramas: This function is not needed.");
-        return [];
+    console.log("loadPanoramas: This function is not needed.");
+    return [];
 }
 
 export async function updatePanoramaConfig(panorama, settings) {
-      console.log(`updatePanoramaConfig: Updating config for panorama: ${panorama}, settings:`, settings);
-     try {
-         const response = await fetch(`/api/update_config`, {
-           method: 'POST',
+    console.log(`updatePanoramaConfig: Updating config for panorama: ${panorama}, settings:`, settings);
+    try {
+        const response = await fetch(`/api/update_config`, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ panorama, ...settings })
-       });
-          if (!response.ok) {
-                console.error(`updatePanoramaConfig: Server responded with error: ${response.status} - ${response.statusText}`);
-               return;
-          }
+            body: JSON.stringify({ panorama, ...settings })
+        });
+        if (!response.ok) {
+            console.error(`updatePanoramaConfig: Server responded with error: ${response.status} - ${response.statusText}`);
+            return;
+        }
         console.log("updatePanoramaConfig: Config updated successfully.");
-      } catch (error) {
-           console.error("updatePanoramaConfig: Error updating config:", error);
-      }
+    } catch (error) {
+        console.error("updatePanoramaConfig: Error updating config:", error);
+    }
 }
 
 export async function loadPanorama(panoramaId) { // Pass Panorama ID
     console.log(`loadPanorama: Loading panorama: ${panoramaId}`);
-     try {
-         // Fetch panorama metadata from Cloudflare Workers API endpoint
-         const response = await fetch(`/api/panorama/${panoramaId}`); // API Endpoint to fetch the panorama data
-         if (!response.ok) {
-              console.error(`loadPanorama: No config found for ${panoramaId}, server responded with: ${response.status} - ${response.statusText}`);
-              return;
-         }
-       const metadata = await response.json(); // Assuming you'll receive a JSON object with R2 URLs
+    try {
+        // Fetch panorama metadata from Cloudflare Workers API endpoint
+        const response = await fetch(`/api/panorama/${panoramaId}`); // API Endpoint to fetch the panorama data
+        if (!response.ok) {
+            console.error(`loadPanorama: No config found for ${panoramaId}, server responded with: ${response.status} - ${response.statusText}`);
+            return;
+        }
+        const metadata = await response.json(); // Assuming you'll receive a JSON object with R2 URLs
 
         console.log(`loadPanorama: Metadata loaded for ${panoramaId}:`, metadata);
 
         // Update UI elements if present
-      const sphereSizeEl = document.getElementById('sphereSizeValue');
+        const sphereSizeEl = document.getElementById('sphereSizeValue');
         const depthScaleEl = document.getElementById('depthScaleValue');
         const meshResEl = document.getElementById('meshResolutionValue');
 
-         if (sphereSizeEl) sphereSizeEl.innerText = metadata.sphereSize;
-         if (depthScaleEl) depthScaleEl.innerText = metadata.depthScale;
-         if (meshResEl) meshResEl.innerText = metadata.meshResolution;
+        if (sphereSizeEl) sphereSizeEl.innerText = metadata.sphereSize;
+        if (depthScaleEl) depthScaleEl.innerText = metadata.depthScale;
+        if (meshResEl) meshResEl.innerText = metadata.meshResolution;
 
-          if (document.getElementById('sphereSize')) document.getElementById('sphereSize').value = metadata.sphereSize;
-          if (document.getElementById('depthScale')) document.getElementById('depthScale').value = metadata.depthScale;
+        if (document.getElementById('sphereSize')) document.getElementById('sphereSize').value = metadata.sphereSize;
+        if (document.getElementById('depthScale')) document.getElementById('depthScale').value = metadata.depthScale;
         if (document.getElementById('meshResolution')) document.getElementById('meshResolution').value = metadata.meshResolution;
 
-
         // Remove old sphere if exists
-       if (sphere) {
-           console.log(`loadPanorama: Removing old sphere for ${panoramaId}`);
-           scene.remove(sphere);
-          sphere.geometry.dispose();
-           sphere.material.dispose();
+        if (sphere) {
+            console.log(`loadPanorama: Removing old sphere for ${panoramaId}`);
+            scene.remove(sphere);
+            sphere.geometry.dispose();
+            sphere.material.dispose();
         }
-          // Create sphere
+        // Create sphere
         const panoSphereGeo = new THREE.SphereGeometry(metadata.sphereSize, metadata.meshResolution, metadata.meshResolution);
         const panoSphereMat = new THREE.MeshStandardMaterial({
-          side: THREE.DoubleSide,
-           displacementScale: metadata.depthScale,
-           transparent: false,
+            side: THREE.DoubleSide,
+            displacementScale: metadata.depthScale,
+            transparent: false,
             opacity: 1
-       });
+        });
 
         sphere = new THREE.Mesh(panoSphereGeo, panoSphereMat);
-       scene.add(sphere);
-         console.log(`loadPanorama: Sphere created and added to scene for ${panoramaId}.`, sphere);
+        scene.add(sphere);
+        console.log(`loadPanorama: Sphere created and added to scene for ${panoramaId}.`, sphere);
 
         // Load images using R2 URLs from metadata
         const manager = new THREE.LoadingManager();
         const loader = new THREE.TextureLoader(manager);
 
         loader.load(metadata.imageURL, (texture) => {
-           texture.colorSpace = THREE.SRGBColorSpace;
-           texture.minFilter = THREE.NearestFilter;
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.NearestFilter;
             texture.generateMipmaps = false;
-           sphere.material.map = texture;
-             console.log(`loadPanorama: Main image loaded for ${panoramaId}`);
+            sphere.material.map = texture;
+            console.log(`loadPanorama: Main image loaded for ${panoramaId}`);
         }, undefined, (err) => {
-          console.error(`loadPanorama: Failed to load main image for ${panoramaId}:`, err);
-     });
+            console.error(`loadPanorama: Failed to load main image for ${panoramaId}:`, err);
+        });
 
-       loader.load(metadata.depthURL, (depth) => {
-         depth.minFilter = THREE.NearestFilter;
-           depth.generateMipmaps = false;
+        loader.load(metadata.depthURL, (depth) => {
+            depth.minFilter = THREE.NearestFilter;
+            depth.generateMipmaps = false;
             sphere.material.displacementMap = depth;
-             console.log(`loadPanorama: Depth map loaded for ${panoramaId}`);
-       }, undefined, () => {
-         console.log(`loadPanorama: No depth map found for ${panoramaId}, proceeding without displacement.`);
-      });
+            console.log(`loadPanorama: Depth map loaded for ${panoramaId}`);
+        }, undefined, () => {
+            console.log(`loadPanorama: No depth map found for ${panoramaId}, proceeding without displacement.`);
+        });
 
-      manager.onLoad = () => {
+        manager.onLoad = () => {
             console.log(`loadPanorama: Panorama ${panoramaId} loaded successfully.`);
-       };
+        };
     } catch (error) {
-       console.error(`loadPanorama: Error loading panorama ${panoramaId}:`, error);
-   }
+        console.error(`loadPanorama: Error loading panorama ${panoramaId}:`, error);
+    }
 }
