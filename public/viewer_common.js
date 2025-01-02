@@ -23,6 +23,7 @@ export async function initViewer() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setAnimationLoop(animate);
     renderer.xr.enabled = true;
+
     try {
         renderer.xr.setReferenceSpaceType('local');
     } catch (error) {
@@ -31,12 +32,12 @@ export async function initViewer() {
     try {
         renderer.xr.setReferenceSpaceType('viewer');
     } catch (error) {
-        console.log('local viewer is not supported');
+        console.log('viewer is not supported');
     }
     try {
         renderer.xr.setReferenceSpaceType('local-floor');
     } catch (error) {
-        console.log('local floor is not supported');
+        console.log('local-floor is not supported');
     }
 
     container.appendChild(renderer.domElement);
@@ -84,39 +85,16 @@ function animate() {
     }
 }
 
-export async function loadPanoramas() {
-    console.log("loadPanoramas: This function is not needed.");
-    return [];
-}
-
-export async function updatePanoramaConfig(panorama, settings) {
-    console.log(`updatePanoramaConfig: Updating config for panorama: ${panorama}, settings:`, settings);
-    try {
-        const response = await fetch(`/api/update_config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ panorama, ...settings })
-        });
-        if (!response.ok) {
-            console.error(`updatePanoramaConfig: Server responded with error: ${response.status} - ${response.statusText}`);
-            return;
-        }
-        console.log("updatePanoramaConfig: Config updated successfully.");
-    } catch (error) {
-        console.error("updatePanoramaConfig: Error updating config:", error);
-    }
-}
-
-export async function loadPanorama(panoramaId) { // Pass Panorama ID
+export async function loadPanorama(panoramaId) {
     console.log(`loadPanorama: Loading panorama: ${panoramaId}`);
     try {
-        // Fetch panorama metadata from Cloudflare Workers API endpoint
-        const response = await fetch(`/api/panorama/${panoramaId}`); // API Endpoint to fetch the panorama data
+        // CHANGED: Use full Worker URL instead of '/api/panorama/...'
+        const response = await fetch(`https://holoscape-api.sladebquinn.workers.dev/api/panorama/${panoramaId}`);
         if (!response.ok) {
             console.error(`loadPanorama: No config found for ${panoramaId}, server responded with: ${response.status} - ${response.statusText}`);
             return;
         }
-        const metadata = await response.json(); // Assuming you'll receive a JSON object with R2 URLs
+        const metadata = await response.json();
 
         console.log(`loadPanorama: Metadata loaded for ${panoramaId}:`, metadata);
 
@@ -129,9 +107,15 @@ export async function loadPanorama(panoramaId) { // Pass Panorama ID
         if (depthScaleEl) depthScaleEl.innerText = metadata.depthScale;
         if (meshResEl) meshResEl.innerText = metadata.meshResolution;
 
-        if (document.getElementById('sphereSize')) document.getElementById('sphereSize').value = metadata.sphereSize;
-        if (document.getElementById('depthScale')) document.getElementById('depthScale').value = metadata.depthScale;
-        if (document.getElementById('meshResolution')) document.getElementById('meshResolution').value = metadata.meshResolution;
+        if (document.getElementById('sphereSize')) {
+            document.getElementById('sphereSize').value = metadata.sphereSize;
+        }
+        if (document.getElementById('depthScale')) {
+            document.getElementById('depthScale').value = metadata.depthScale;
+        }
+        if (document.getElementById('meshResolution')) {
+            document.getElementById('meshResolution').value = metadata.meshResolution;
+        }
 
         // Remove old sphere if exists
         if (sphere) {
@@ -140,13 +124,14 @@ export async function loadPanorama(panoramaId) { // Pass Panorama ID
             sphere.geometry.dispose();
             sphere.material.dispose();
         }
+
         // Create sphere
         const panoSphereGeo = new THREE.SphereGeometry(metadata.sphereSize, metadata.meshResolution, metadata.meshResolution);
         const panoSphereMat = new THREE.MeshStandardMaterial({
             side: THREE.DoubleSide,
             displacementScale: metadata.depthScale,
             transparent: false,
-            opacity: 1
+            opacity: 1,
         });
 
         sphere = new THREE.Mesh(panoSphereGeo, panoSphereMat);
@@ -157,29 +142,60 @@ export async function loadPanorama(panoramaId) { // Pass Panorama ID
         const manager = new THREE.LoadingManager();
         const loader = new THREE.TextureLoader(manager);
 
-        loader.load(metadata.imageURL, (texture) => {
-            texture.colorSpace = THREE.SRGBColorSpace;
-            texture.minFilter = THREE.NearestFilter;
-            texture.generateMipmaps = false;
-            sphere.material.map = texture;
-            console.log(`loadPanorama: Main image loaded for ${panoramaId}`);
-        }, undefined, (err) => {
-            console.error(`loadPanorama: Failed to load main image for ${panoramaId}:`, err);
-        });
+        loader.load(
+            metadata.imageURL,
+            (texture) => {
+                texture.colorSpace = THREE.SRGBColorSpace;
+                texture.minFilter = THREE.NearestFilter;
+                texture.generateMipmaps = false;
+                sphere.material.map = texture;
+                console.log(`loadPanorama: Main image loaded for ${panoramaId}`);
+            },
+            undefined,
+            (err) => {
+                console.error(`loadPanorama: Failed to load main image for ${panoramaId}:`, err);
+            }
+        );
 
-        loader.load(metadata.depthURL, (depth) => {
-            depth.minFilter = THREE.NearestFilter;
-            depth.generateMipmaps = false;
-            sphere.material.displacementMap = depth;
-            console.log(`loadPanorama: Depth map loaded for ${panoramaId}`);
-        }, undefined, () => {
-            console.log(`loadPanorama: No depth map found for ${panoramaId}, proceeding without displacement.`);
-        });
+        loader.load(
+            metadata.depthURL,
+            (depth) => {
+                depth.minFilter = THREE.NearestFilter;
+                depth.generateMipmaps = false;
+                sphere.material.displacementMap = depth;
+                console.log(`loadPanorama: Depth map loaded for ${panoramaId}`);
+            },
+            undefined,
+            () => {
+                console.log(`loadPanorama: No depth map found for ${panoramaId}, proceeding without displacement.`);
+            }
+        );
 
         manager.onLoad = () => {
             console.log(`loadPanorama: Panorama ${panoramaId} loaded successfully.`);
         };
     } catch (error) {
         console.error(`loadPanorama: Error loading panorama ${panoramaId}:`, error);
+    }
+}
+
+// (Optional) Example config update function. This route doesn't exist in the Worker code.
+// If you want it to do something, you must implement a matching /api/update_config endpoint.
+export async function updatePanoramaConfig(panorama, settings) {
+    console.log(`updatePanoramaConfig: Updating config for panorama: ${panorama}, settings:`, settings);
+    try {
+        // CHANGED: Use full Worker URL instead of '/api/update_config'
+        const response = await fetch(`https://holoscape-api.sladebquinn.workers.dev/api/update_config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ panorama, ...settings })
+        });
+        if (!response.ok) {
+            console.error(`updatePanoramaConfig: Server responded with error: ${response.status} - ${response.statusText}`);
+            return;
+        }
+        console.log("updatePanoramaConfig: Config updated successfully.");
+    } catch (error) {
+        console.error("updatePanoramaConfig: Error updating config:", error);
     }
 }
