@@ -9,13 +9,18 @@ export async function initViewer() {
     console.log("initViewer: container element:", container);
     clock = new THREE.Clock();
     scene = new THREE.Scene();
+
+    // Make sure the background is dark (similar to original example)
     scene.background = new THREE.Color(0x101010);
 
     const light = new THREE.AmbientLight(0xffffff, 3);
     scene.add(light);
 
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000);
-    camera.position.set(0, 0, 0.01);
+
+    // CHANGED: Put the camera exactly at the center (0, 0, 0)
+    camera.position.set(0, 0, 0);
+
     scene.add(camera);
 
     renderer = new THREE.WebGLRenderer();
@@ -72,6 +77,7 @@ function onWindowResize() {
 }
 
 function animate() {
+    // Keep this gentle sway if not in VR session
     if (sphere && !renderer.xr.isPresenting) {
         const time = clock.getElapsedTime();
         sphere.rotation.y += 0.001;
@@ -88,25 +94,22 @@ function animate() {
 export async function loadPanorama(panoramaId) {
     console.log(`loadPanorama: Loading panorama: ${panoramaId}`);
     try {
-        // CHANGED: Use full Worker URL instead of '/api/panorama/...'
+        // Assuming you already updated this fetch to your Worker domain
         const response = await fetch(`https://holoscape-api.sladebquinn.workers.dev/api/panorama/${panoramaId}`);
         if (!response.ok) {
             console.error(`loadPanorama: No config found for ${panoramaId}, server responded with: ${response.status} - ${response.statusText}`);
             return;
         }
         const metadata = await response.json();
-
         console.log(`loadPanorama: Metadata loaded for ${panoramaId}:`, metadata);
 
         // Update UI elements if present
         const sphereSizeEl = document.getElementById('sphereSizeValue');
         const depthScaleEl = document.getElementById('depthScaleValue');
         const meshResEl = document.getElementById('meshResolutionValue');
-
         if (sphereSizeEl) sphereSizeEl.innerText = metadata.sphereSize;
         if (depthScaleEl) depthScaleEl.innerText = metadata.depthScale;
         if (meshResEl) meshResEl.innerText = metadata.meshResolution;
-
         if (document.getElementById('sphereSize')) {
             document.getElementById('sphereSize').value = metadata.sphereSize;
         }
@@ -117,7 +120,7 @@ export async function loadPanorama(panoramaId) {
             document.getElementById('meshResolution').value = metadata.meshResolution;
         }
 
-        // Remove old sphere if exists
+        // Remove old sphere if it exists
         if (sphere) {
             console.log(`loadPanorama: Removing old sphere for ${panoramaId}`);
             scene.remove(sphere);
@@ -125,20 +128,25 @@ export async function loadPanorama(panoramaId) {
             sphere.material.dispose();
         }
 
-        // Create sphere
-        const panoSphereGeo = new THREE.SphereGeometry(metadata.sphereSize, metadata.meshResolution, metadata.meshResolution);
+        // CHANGED: Use BackSide so we can view from inside the sphere
+        const panoSphereGeo = new THREE.SphereGeometry(
+            metadata.sphereSize,
+            metadata.meshResolution,
+            metadata.meshResolution
+        );
         const panoSphereMat = new THREE.MeshStandardMaterial({
-            side: THREE.DoubleSide,
+            side: THREE.BackSide,
+            // Keep the scale as-is from metadata (e.g., -4 if you store it that way)
             displacementScale: metadata.depthScale,
             transparent: false,
-            opacity: 1,
+            opacity: 1
         });
 
         sphere = new THREE.Mesh(panoSphereGeo, panoSphereMat);
         scene.add(sphere);
         console.log(`loadPanorama: Sphere created and added to scene for ${panoramaId}.`, sphere);
 
-        // Load images using R2 URLs from metadata
+        // Load images using the R2 URLs from metadata
         const manager = new THREE.LoadingManager();
         const loader = new THREE.TextureLoader(manager);
 
@@ -179,12 +187,10 @@ export async function loadPanorama(panoramaId) {
     }
 }
 
-// (Optional) Example config update function. This route doesn't exist in the Worker code.
-// If you want it to do something, you must implement a matching /api/update_config endpoint.
+// This remains optional unless you have a matching route in your Worker
 export async function updatePanoramaConfig(panorama, settings) {
     console.log(`updatePanoramaConfig: Updating config for panorama: ${panorama}, settings:`, settings);
     try {
-        // CHANGED: Use full Worker URL instead of '/api/update_config'
         const response = await fetch(`https://holoscape-api.sladebquinn.workers.dev/api/update_config`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
