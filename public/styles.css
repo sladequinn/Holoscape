@@ -1,36 +1,78 @@
-body {
-    margin: 0;
-    overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #000;
-    color: #fff;
+/* 
+  styles.css
+  -----------
+  Combines your original styles with the necessary full-screen styling
+  for the Three.js container (#container).
+*/
+
+/* Make html/body take up the entire viewport */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* no scrollbars for the 3D view */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #000; /* fallback background */
+  color: #fff; /* default text color */
 }
 
+/* A hero section for your homepage (if you need it full-height) */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* takes full viewport height */
+  text-align: center;
+  background-color: #000; /* or any color/image you prefer */
+}
+
+/* The container where Three.js/WebXR renders its canvas */
+#container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0; /* behind the UI panels */
+}
+
+/* Basic info overlay panel (top-left) */
 #info {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 5px;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  z-index: 999; /* above the 3D canvas */
 }
 
+/* Controls panel (top-right in your browse.html) */
 #controls {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 5px;
-    display: flex;
-    flex-direction: column;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  z-index: 999; /* above the 3D canvas */
 }
 
-#controls label, #controls input, #controls select, #controls button {
-    margin-bottom: 5px;
-    color: #fff;
+/* Basic styling for labels, inputs, etc. inside #controls */
+#controls label,
+#controls input,
+#controls select,
+#controls button {
+  margin-bottom: 5px;
+  color: #fff;
+  font-size: 14px;
 }
 
+/* Range sliders in #controls */
 #controls input[type="range"] {
-    width: 200px;
+  width: 200px;
 }
