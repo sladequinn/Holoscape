@@ -10,41 +10,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("browse.js: Panorama selector element:", selector);
 
         // Load initial panorama data
-        const initialPanoramaId = 'edc0dfb9-5017-4f53-97ef-73b6da9a26a7'; // Replace if needed
+        const initialPanoramaId = 'edc0dfb9-5017-4f53-97ef-73b6da9a26a7'; // or any valid ID
         console.log(`browse.js: Loading initial panorama: ${initialPanoramaId}`);
-
-        // Load the initial panorama
         await loadPanorama(initialPanoramaId);
 
-        // Create an <option> with the initial panorama name or ID
+        // Create an <option> for the initial panorama
         const option = document.createElement('option');
         option.value = initialPanoramaId;
-        // We'll just label it with the ID. 
-        // If you'd prefer a name, manually specify or fetch the name from Supabase first.
-        option.text = initialPanoramaId;
+        option.text = initialPanoramaId; // or you could fetch the name from metadata
         selector.add(option);
 
         console.log("browse.js: Panorama options populated.");
 
-        // Handle dropdown changes
         selector.addEventListener('change', () => {
             console.log(`browse.js: Panorama selection changed to: ${selector.value}`);
             loadPanorama(selector.value);
         });
 
-        // Handle "Apply Settings" button
+        // ─────────────────────────────────────────
+        // Slider elements
+        // ─────────────────────────────────────────
+        const sphereSizeRange = document.getElementById('sphereSize');
+        const depthScaleRange = document.getElementById('depthScale');
+        const meshResRange = document.getElementById('meshResolution');
+
+        const sphereSizeValueEl = document.getElementById('sphereSizeValue');
+        const depthScaleValueEl = document.getElementById('depthScaleValue');
+        const meshResValueEl = document.getElementById('meshResolutionValue');
+
+        // Update the text next to the sliders whenever user adjusts them
+        sphereSizeRange.addEventListener('input', () => {
+            sphereSizeValueEl.textContent = sphereSizeRange.value;
+        });
+        depthScaleRange.addEventListener('input', () => {
+            depthScaleValueEl.textContent = depthScaleRange.value;
+        });
+        meshResRange.addEventListener('input', () => {
+            meshResValueEl.textContent = meshResRange.value;
+        });
+
+        // Apply Settings button
         document.getElementById('applySettings').addEventListener('click', async () => {
             console.log("browse.js: Apply settings button clicked.");
             try {
-                const sphereSize = parseFloat(document.getElementById('sphereSize').value);
-                const depthScale = parseFloat(document.getElementById('depthScale').value);
-                const meshResolution = parseInt(document.getElementById('meshResolution').value);
-                console.log(`browse.js: New settings: sphereSize=${sphereSize}, depthScale=${depthScale}, meshResolution=${meshResolution}`);
+                const sphereSize = parseFloat(sphereSizeRange.value);
+                const depthScale = parseFloat(depthScaleRange.value);
+                const meshResolution = parseInt(meshResRange.value);
+
+                console.log(
+                    `browse.js: New settings: sphereSize=${sphereSize}, depthScale=${depthScale}, meshResolution=${meshResolution}`
+                );
 
                 const currentPanorama = selector.value;
                 if (currentPanorama) {
                     console.log(`browse.js: Updating config for panorama: ${currentPanorama}`);
-                    await updatePanoramaConfig(currentPanorama, { sphereSize, depthScale, meshResolution });
+                    await updatePanoramaConfig(currentPanorama, {
+                        sphereSize,
+                        depthScale,
+                        meshResolution,
+                    });
                     console.log(`browse.js: Reloading panorama: ${currentPanorama} after settings update`);
                     loadPanorama(currentPanorama);
                 } else {
