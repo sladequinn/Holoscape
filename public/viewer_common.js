@@ -3,6 +3,7 @@ import { VRButton } from 'https://unpkg.com/three@0.154.0/examples/jsm/webxr/VRB
 
 let camera, scene, renderer, sphere, clock;
 
+/** Initialize the VR viewer */
 export async function initViewer() {
   console.log("initViewer: Starting initialization...");
   const container = document.getElementById('container');
@@ -11,164 +12,122 @@ export async function initViewer() {
   clock = new THREE.Clock();
   scene = new THREE.Scene();
 
-  // So you don't see white if the pano hasn't loaded
+  // Dark background so we don’t see white if the texture or sphere hasn't loaded
   scene.background = new THREE.Color(0x101010);
 
-  // Same brightness you had before
+  // Bright ambient light (from your original code)
   const light = new THREE.AmbientLight(0xffffff, 3);
   scene.add(light);
 
+  // Camera: inside the sphere
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000);
-  // Crucial: place camera at center so you’re inside the sphere
   camera.position.set(0, 0, 0);
   scene.add(camera);
 
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setAnimationLoop(animate);
   renderer.xr.enabled = true;
+  renderer.setAnimationLoop(animate);
+  container.appendChild(renderer.domElement);
 
-  // Attempt referenceSpace setups (harmless if they fail)
+  // Attempt various reference spaces
   try { renderer.xr.setReferenceSpaceType('local'); } catch(e){}
   try { renderer.xr.setReferenceSpaceType('viewer'); } catch(e){}
   try { renderer.xr.setReferenceSpaceType('local-floor'); } catch(e){}
 
-  container.appendChild(renderer.domElement);
-
   const vrButton = VRButton.createButton(renderer);
   document.body.appendChild(vrButton);
-  console.log("initViewer: VRButton created and added to DOM.", vrButton);
+  console.log("initViewer: VRButton created and added.", vrButton);
 
   window.addEventListener('resize', onWindowResize);
   console.log("initViewer: Initialization complete.");
 
-  // Optional check for WebXR
   if (navigator.xr) {
-    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-      if (supported) {
-        console.log("initViewer: WebXR immersive-vr is supported.");
-      } else {
-        console.log("initViewer: WebXR immersive-vr is not supported.");
-      }
+    navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+      console.log("initViewer: WebXR immersive-vr is", supported ? "supported." : "not supported.");
     });
   } else {
     console.log("initViewer: WebXR is not supported by this browser.");
   }
 }
 
+/** Handle window resizing */
 function onWindowResize() {
-  console.log("onWindowResize: Window resized.");
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  console.log("onWindowResize: Camera and renderer updated.");
 }
 
+/** Render loop */
 function animate() {
   if (sphere && !renderer.xr.isPresenting) {
-    const time = clock.getElapsedTime();
+    const t = clock.getElapsedTime();
     sphere.rotation.y += 0.001;
-    sphere.position.x = Math.sin(time) * 0.2;
-    sphere.position.z = Math.cos(time) * 0.2;
+    sphere.position.x = Math.sin(t) * 0.2;
+    sphere.position.z = Math.cos(t) * 0.2;
   }
-  try {
-    renderer.render(scene, camera);
-  } catch (error) {
-    console.error("An error occurred during render:", error);
-  }
+  renderer.render(scene, camera);
 }
 
+/** Load panorama from Worker API, attach texture+depth to sphere */
 export async function loadPanorama(panoramaId) {
-  console.log(`loadPanorama: Loading panorama: ${panoramaId}`);
+  console.log(`loadPanorama: Loading panorama ${panoramaId}`);
   try {
-    // If your Worker URL differs, change it here:
-    const response = await fetch(`https://holoscape-api.sladebquinn.workers.dev/api/panorama/${panoramaId}`);
-    if (!response.ok) {
-      console.error(`loadPanorama: No config found for ${panoramaId}, status: ${response.status}`);
+    const resp = await fetch(`https://holoscape-api.sladebquinn.workers.dev/api/panorama/${panoramaId}`);
+    if (!resp.ok) {
+      console.error(`loadPanorama: no config found, status: ${resp.status}`);
       return;
     }
-    const metadata = await response.json();
-    console.log(`loadPanorama: Metadata loaded for ${panoramaId}:`, metadata);
+    const meta = await resp.json();
+    console.log("loadPanorama: got metadata:", meta);
 
-    // Remove old sphere if any
+    // Cleanup old sphere if present
     if (sphere) {
-      console.log(`loadPanorama: Removing old sphere for ${panoramaId}`);
       scene.remove(sphere);
       sphere.geometry.dispose();
       sphere.material.dispose();
     }
 
-    // The original VR logic with negative displacement
-    const panoSphereGeo = new THREE.SphereGeometry(
-      metadata.sphereSize || 6,
-      metadata.meshResolution || 256,
-      metadata.meshResolution || 256
+    const geo = new THREE.SphereGeometry(
+      meta.sphereSize || 6,
+      meta.meshResolution || 256,
+      meta.meshResolution || 256
     );
-    const panoSphereMat = new THREE.MeshStandardMaterial({
-      side: THREE.BackSide,                 // so you see from inside
-      displacementScale: metadata.depthScale || -4,
+    const mat = new THREE.MeshStandardMaterial({
+      side: THREE.BackSide,
+      displacementScale: meta.depthScale ?? -4,
       transparent: false,
       opacity: 1
     });
 
-    sphere = new THREE.Mesh(panoSphereGeo, panoSphereMat);
+    sphere = new THREE.Mesh(geo, mat);
     scene.add(sphere);
-    console.log(`loadPanorama: Sphere created.`, sphere);
+    console.log(`loadPanorama: sphere created for ${panoramaId}`);
 
-    const manager = new THREE.LoadingManager();
-    const loader = new THREE.TextureLoader(manager);
-
-    // Load main (color) texture
-    loader.load(
-      metadata.imageURL,
-      (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.minFilter = THREE.NearestFilter;
-        texture.generateMipmaps = false;
-        sphere.material.map = texture;
-        console.log(`loadPanorama: Main image loaded for ${panoramaId}`);
-      },
-      undefined,
-      (err) => {
-        console.error(`loadPanorama: Failed to load main image for ${panoramaId}:`, err);
-      }
-    );
-
-    // Load depth map
-    loader.load(
-      metadata.depthURL,
-      (depth) => {
-        depth.minFilter = THREE.NearestFilter;
-        depth.generateMipmaps = false;
-        sphere.material.displacementMap = depth;
-        console.log(`loadPanorama: Depth map loaded for ${panoramaId}`);
-      },
-      undefined,
-      () => {
-        console.log(`loadPanorama: No depth map found for ${panoramaId}, ignoring displacement.`);
-      }
-    );
-
-    manager.onLoad = () => {
-      console.log(`loadPanorama: Panorama ${panoramaId} loaded successfully.`);
-    };
-
-  } catch (error) {
-    console.error(`loadPanorama: Error loading panorama ${panoramaId}:`, error);
+    // Load main + depth
+    const loader = new THREE.TextureLoader();
+    loader.load(meta.imageURL, tex => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.NearestFilter;
+      tex.generateMipmaps = false;
+      sphere.material.map = tex;
+      console.log("loadPanorama: main texture loaded");
+    });
+    loader.load(meta.depthURL, dTex => {
+      dTex.minFilter = THREE.NearestFilter;
+      dTex.generateMipmaps = false;
+      sphere.material.displacementMap = dTex;
+      console.log("loadPanorama: depth map loaded");
+    });
+  } catch (err) {
+    console.error(`loadPanorama: error fetching panorama ${panoramaId}`, err);
   }
 }
 
-/**
- * Re-add this so browse.js doesn't crash. 
- * If you don't have an /api/update_config route, 
- * it will still fail server-side, but won't break the import.
- */
+/** For browse.js calls, so we don't get an import error */
 export async function updatePanoramaConfig(panoramaId, settings) {
-  console.log(`updatePanoramaConfig: called for panoramaId=${panoramaId}`, settings);
-  // If you do want it to do something, implement the route in your Worker
-  try {
-    const response = await fetch(`https://holoscape-api.sladebquinn.workers.dev/api/update_config`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ panoramaId,
+  console.log("updatePanoramaConfig called:", panoramaId, settings);
+  // If you have no /api/update_config route, this won't do anything real
+  // but it will avoid import errors in browse.js.
+}
