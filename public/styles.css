@@ -1,62 +1,115 @@
-/* 1) Arcade Classic Font */
 /* 
-   Make sure you have the actual ArcadeClassic.woff or .ttf file in the same folder.
-   Adjust the src URL below to match the exact filename/path you have:
+  styles.css
+  -----------
+  Combines your original styles with the necessary full-screen styling
+  for the Three.js container (#container).
 */
+
+/* 1) Load the ARCADE_I.TTF custom font */
 @font-face {
-  font-family: "ARCADE_I";
-  src: url("ARCADE_I.TTF") format("TTF");
-  /* or .ttf:
-     src: url("ArcadeClassic.ttf") format("truetype");
-  */
+  font-family: "ArcadeClassic";
+  src: url("ARCADE_I.TTF") format("truetype");
+  /* Ensure this file is in the same folder as styles.css 
+     or adjust the path accordingly */
 }
 
+/* Make html/body take up the entire viewport */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* no scrollbars */
-  font-family: "ARCADE_I", sans-serif; /* fallback if font fails */
-  background-color: #000; /* fallback background if hero fails */
+  overflow: hidden; /* no scrollbars for the 3D view */
+  font-family: "ArcadeClassic", 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #000; /* fallback background */
+  color: #fff; /* default text color */
 }
 
-/* 2) Full-screen hero with a background image (optional) */
+/* The container where Three.js/WebXR renders its canvas */
+#container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0; /* behind the UI panels */
+}
+
+/* Basic info overlay panel (top-left) */
+#info {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  z-index: 999; /* above the 3D canvas */
+}
+
+/* Controls panel (top-right in your browse.html) */
+#controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  z-index: 999; /* above the 3D canvas */
+}
+
+/* Basic styling for labels, inputs, etc. inside #controls */
+#controls label,
+#controls input,
+#controls select,
+#controls button {
+  margin-bottom: 5px;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* Range sliders in #controls */
+#controls input[type="range"] {
+  width: 200px;
+}
+
+/* 2) Full-screen hero background (using hero_bg.png if you want) */
 .hero {
   position: relative;
   width: 100%;
-  height: 100vh; /* full viewport height */
-  /* If you still want a background image, uncomment and adjust:
-     background: url("hero_bg.jpg") no-repeat center center;
-     background-size: cover;
-  */
+  height: 100vh; /* Full viewport height */
+  background: url("hero_bg.png") no-repeat center center;
+  background-size: cover; /* Scales image to fill container */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* 3) Buttons container - purely for layout */
+/* 3) We remove text in the hero and only show two big buttons near the bottom */
 .hero-buttons {
+  position: absolute;
+  bottom: 50px; /* near the bottom of the hero */
+  left: 50%;
+  transform: translateX(-50%); 
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px; /* spacing between buttons */
+  flex-direction: row;
+  gap: 40px; /* space between the two buttons */
 }
 
-/* 4) Button styling: bigger, rounder, black background, white text */
+/* 4) Style for the large, round black buttons with white text */
 .hero-buttons button {
-  font-family: "ARCADE_I", sans-serif;
+  font-family: "ArcadeClassic", sans-serif;
   font-size: 24px;
   padding: 20px 40px;
   border: none;
   border-radius: 9999px; /* very round */
-  background-color: #000; /* black */
+  background-color: #000; /* black background */
   color: #fff;            /* white text */
   cursor: pointer;
   transition: transform 0.1s ease-in-out;
 }
 
-/* Optional hover/active states */
 .hero-buttons button:hover {
   transform: scale(1.05);
 }
