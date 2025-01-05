@@ -72,6 +72,29 @@ html, body {
   font-size: 14px;
 }
 
+/* Full-screen hero background */
+.hero {
+  position: relative;
+  width: 100%;
+  height: 100vh; /* Full viewport height */
+  background: url("hero_bg.png") no-repeat center center;
+  background-size: cover; /* Scales image to fill container */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The hero text content is layered on top */
+.hero-content {
+  text-align: center;
+  color: #fff;
+  /* Add a slight background behind the text if you want it more readable:
+     background: rgba(0, 0, 0, 0.3);
+     padding: 20px;
+     border-radius: 10px;
+  */
+}
+
 /* Range sliders in #controls */
 #controls input[type="range"] {
   width: 200px;
